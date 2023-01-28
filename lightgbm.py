@@ -38,7 +38,9 @@ from scipy.stats import pearsonr
 
 from indicators import *
 
-from flaml import AutoML
+#from flaml import AutoML
+import lightgbm as lgb
+
 
 def get_df(ticker):
     stock = yf.Ticker(ticker)
@@ -107,7 +109,7 @@ params_test = {
     'powerEBBPPercentile_lookback': 0,
 }
 
-def addData(ohlc):
+def addData(ohlc, title):
     df = dict()
     df['CLOSE_CHANGE']    = ohlc.Close.pct_change()[200:]
     df['OPEN_CHANGE']     = ohlc.Open.pct_change()[200:]
@@ -131,8 +133,7 @@ def addData(ohlc):
     df['BULLBEAR']     = BBP(ohlc, day1=15, day2=30, lookback=100, l=1.25)[200:]
     df['GAMBLER']      = gamblers_fallacy_inter(ohlc, d1=50, d2=100)[200:]
 
-    print(df)
-    return pd.DataFrame(df)
+    return pd.DataFrame.from_dict(df)
 
 def calculate_ys(dflist):
     yl = np.zeros(shape=(3000,len(dflist.keys())))
@@ -195,15 +196,14 @@ def train(data, target):
             eval_metric='l1',
             callbacks=[lgb.early_stopping(5)])
 
-'''
-
 def train2(X_train, y_train):
-    automl = AutoML()
+    print(X_train, y_train)
+    automl = lightgbm.LGBMRegressor()
 
     # Specify automl goal and constraint
     automl_settings = {
         "time_budget": 1,  # in seconds
-        "metric": 'r2',
+        "metric": 'l2',
         "task": 'regression',
         "log_file_name": "loss.log",
     }
@@ -217,11 +217,49 @@ def train2(X_train, y_train):
     print(automl.model.estimator)
 
 
+'''
+
+SEARCH_PARAMS = {'learning_rate': 0.4,
+                'max_depth': 15,
+                'num_leaves': 32,
+                'feature_fraction': 0.8,
+                'subsample': 0.2}
+
+FIXED_PARAMS={'objective': 'regression',
+             'metric': 'tweedie',
+             'is_unbalance':True,
+             'bagging_freq':5,
+             'boosting':'dart',
+             'num_boost_round':300,
+             'early_stopping_rounds':30}
+
+def train3(data, target):
+    X_train  = data.iloc[:-10]
+    X_test   = data.iloc[-10:]
+    y_train  = target[:-10]
+    print(X_train)
+    print(X_train.values)
+    print(len(y_train))
+    y_test   = target[-10:]
+    train_data = lgb.Dataset(X_train, label=y_train)
+    valid_data = lgb.Dataset(X_valid, label=y_valid)
+
+    params = {'metric':FIXED_PARAMS['metric'],
+             'objective':FIXED_PARAMS['objective'],
+             **search_params}
+
+    model = lgb.train(params, train_data,
+                     valid_sets=[valid_data],
+                     num_boost_round=FIXED_PARAMS['num_boost_round'],
+                     early_stopping_rounds=FIXED_PARAMS['early_stopping_rounds'],
+                     valid_names=['valid'])
+    return score
+
+
 
 def run():
-    df = addData(semiconductor_dfs['NVDA'])
-    print(df, inct1)
-    train2(df, inct1)
+    df = addData(semiconductor_dfs['NVDA'],'NVDA')
+    train3(df, inct1[200:])
 
 run()
 
