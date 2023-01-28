@@ -4,41 +4,10 @@
 
 
 import pandas as pd
-import pandas_ta as ta
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-from matplotlib.pyplot import figure
-from scipy.fft import fft, ifft
-from datetime import datetime
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 import yfinance as yf
-import sklearn
-import sklearn.model_selection
-from sklearn.metrics import log_loss
-import time
-import warnings
-
 import numpy as np
-#import optuna.integration.lightgbm as lgb
-
-#from lightgbm import early_stopping
-#from lightgbm import log_evaluation
-import sklearn.datasets
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import train_test_split
-
-
 from tqdm import tqdm
-from scipy.stats import percentileofscore
-from numpy.random import randn
-from numpy.random import seed
-from scipy.stats import pearsonr
-
 from indicators import *
-
-#from flaml import AutoML
 import lightgbm as lgb
 
 
