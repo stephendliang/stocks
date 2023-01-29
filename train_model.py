@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 from indicators import *
 import lightgbm as lgb
-
+from flaml import AutoML
 
 def get_df(ticker):
     stock = yf.Ticker(ticker)
@@ -165,28 +165,26 @@ def train(data, target):
             eval_metric='l1',
             callbacks=[lgb.early_stopping(5)])
 
+
+'''
 def train2(X_train, y_train):
-    print(X_train, y_train)
-    automl = lightgbm.LGBMRegressor()
+    automl = AutoML()
 
     # Specify automl goal and constraint
     automl_settings = {
-        "time_budget": 1,  # in seconds
-        "metric": 'l2',
+        "time_budget": 30,  # in seconds
+        "metric": 'r2',
         "task": 'regression',
         "log_file_name": "loss.log",
     }
 
     # Train with labeled input data
-    automl.fit(X_train=X_train, y_train=y_train,
+    automl.fit(X_train=X_train.values, y_train=np.array(y_train),
                **automl_settings)
     # Predict
-    print(automl.predict(X_train))
     # Print the best model
     print(automl.model.estimator)
 
-
-'''
 
 SEARCH_PARAMS = {'learning_rate': 0.4,
                 'max_depth': 15,
@@ -206,28 +204,25 @@ def train3(data, target):
     X_train  = data.iloc[:-10]
     X_test   = data.iloc[-10:]
     y_train  = target[:-10]
-    print(X_train)
-    print(X_train.values)
-    print(len(y_train))
     y_test   = target[-10:]
     train_data = lgb.Dataset(X_train, label=y_train)
-    valid_data = lgb.Dataset(X_valid, label=y_valid)
+    valid_data = lgb.Dataset(X_test, label=y_test)
 
     params = {'metric':FIXED_PARAMS['metric'],
              'objective':FIXED_PARAMS['objective'],
-             **search_params}
+             **SEARCH_PARAMS}
 
     model = lgb.train(params, train_data,
                      valid_sets=[valid_data],
                      num_boost_round=FIXED_PARAMS['num_boost_round'],
                      early_stopping_rounds=FIXED_PARAMS['early_stopping_rounds'],
                      valid_names=['valid'])
-    return score
 
 
 
 def run():
     df = addData(semiconductor_dfs['NVDA'],'NVDA')
+    train2(df, inct1[200:])
     train3(df, inct1[200:])
 
 run()
